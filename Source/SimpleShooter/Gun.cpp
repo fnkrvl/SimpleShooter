@@ -2,8 +2,8 @@
 
 
 #include "Gun.h"
-
-#include "ToolContextInterfaces.h"
+#include "DrawDebugHelpers.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values
 AGun::AGun()
@@ -31,4 +31,33 @@ void AGun::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 }
+
+void AGun::PullTrigger()
+{
+	UGameplayStatics::SpawnEmitterAttached(MuzzleFlash, Mesh, TEXT("MuzzleFlashSocket"));
+
+	APawn* OwnerPawn = Cast<APawn>(GetOwner());
+	if (OwnerPawn == nullptr) return;
+
+	AController* OwnerContoller = OwnerPawn->GetController();
+	if (OwnerContoller == nullptr) return;
+
+	FVector Location;
+	FRotator Rotation;
+
+	OwnerContoller->GetPlayerViewPoint(Location, Rotation);
+	
+	FVector End = Location + Rotation.Vector();
+
+	FHitResult Hit;
+	bool bSuccess = GetWorld()->LineTraceSingleByChannel(Hit, Location, End, ECollisionChannel::ECC_EngineTraceChannel1);
+
+	if (bSuccess)
+	{
+		//DrawDebugCamera(GetWorld(), Location, Rotation, 90, 2, FColor::Red, true);
+		DrawDebugPoint(GetWorld(), Hit.Location, 5, FColor::Magenta, true);
+	}
+}
+
+
 
