@@ -39,24 +39,33 @@ void AGun::PullTrigger()
 	APawn* OwnerPawn = Cast<APawn>(GetOwner());
 	if (OwnerPawn == nullptr) return;
 
-	AController* OwnerContoller = OwnerPawn->GetController();
-	if (OwnerContoller == nullptr) return;
+	AController* OwnerController = OwnerPawn->GetController();
+	if (OwnerController == nullptr) return;
 
 	FVector Location;
 	FRotator Rotation;
 
-	OwnerContoller->GetPlayerViewPoint(Location, Rotation);
-	
-	FVector End = Location + Rotation.Vector();
+	OwnerController->GetPlayerViewPoint(Location, Rotation);
+
+	const FVector End = Location + Rotation.Vector() * MaxRange;
 
 	FHitResult Hit;
-	bool bSuccess = GetWorld()->LineTraceSingleByChannel(Hit, Location, End, ECollisionChannel::ECC_EngineTraceChannel1);
+	const bool bSuccess = GetWorld()->LineTraceSingleByChannel(Hit, Location, End, ECollisionChannel::ECC_GameTraceChannel1);
 
 	if (bSuccess)
 	{
-		//DrawDebugCamera(GetWorld(), Location, Rotation, 90, 2, FColor::Red, true);
-		DrawDebugPoint(GetWorld(), Hit.Location, 5, FColor::Magenta, true);
+		const FVector ShotDirection = -Rotation.Vector();
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ImpactEffect, Hit.Location, ShotDirection.Rotation());
+		
+		AActor* HitActor = Hit.GetActor();
+
+		if (HitActor != nullptr)
+		{
+			FPointDamageEvent DamageEvent(Damage, Hit, ShotDirection, nullptr);
+			HitActor->TakeDamage(Damage, DamageEvent, OwnerController, this);
+		}
 	}
+		
 }
 
 
